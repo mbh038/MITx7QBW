@@ -1,0 +1,45 @@
+---
+title: "Review Material"
+author: "Michael Hunt"
+date: "April 28, 2016"
+output: html_document
+---
+
+From MITx 7.00x
+
+## Definitions of Genetic Terminology
+
+Professor Lander, from MITx 7.
+
+### Gene
+
+Discrete factors of inheritance.
+
+### Allele
+
+Alternative types of a gene aA, bB etc. Each organism has two alleles for each gene.
+Alle les are _not_ dominant or recessive - phenotypes are.
+
+### Genotype
+
+specified by which two alleles one has at a particular gene.
+
+### Homozygote
+
+Same alleles: AA or aa etc
+
+### Heterozygote
+
+Different alleles: Aa, Bb etc.
+
+### Phenotype  
+
+Appearance, trait. 
+Some are dominant over others, eg round seed colour over wrinkled.
+F1 hybrid is dominant over 2 if hybrid between the two has phenotype 1, not 2.
+
+_Phenotypes_ are dominant or recessive, _not_ alleles.
+
+## Homologous Recombination
+
+Michelle on meiotic chromosome segregation.
