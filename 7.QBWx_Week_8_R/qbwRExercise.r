@@ -43,3 +43,33 @@ points(1, m, pch="x")
 below = m-2*s
 above = m+2*s
 errorbars(above, below)
+
+## USING SIMULATIONS TO ESTIMATE CONFIDENCE
+
+nsamples = 100
+samplesize = 25
+datasets = sim(nsamples, samplesize)
+plot(datasets$xvals, datasets$yvals, col="grey")
+col.means = colMeans(datasets$yvals)
+col.sems = sem(datasets$yvals)
+points(1:nsamples, col.means, pch="x")
+col.lowers = col.means-2*col.sems
+col.uppers = col.means+2*col.sems
+colors = errorbarcolors(col.uppers, col.lowers)
+errorbars(col.uppers, col.lowers, col=colors)
+abline(h=0, col="red")
+print(count(0, col.lowers, col.uppers)/nsamples)
+
+## STANDARD ERROR IN REAL DATA
+
+fly.means = c(mean(lowtemp), mean(hightemp))
+fly.sems = c(sem(lowtemp), sem(hightemp))
+
+fly.lower = fly.means-2*fly.sems
+fly.upper = fly.means+2*fly.sems
+
+plot(c(1,2), fly.means)
+errorbars(fly.lower, fly.upper)
+
+plot(c(1,2), fly.means, ylim=c(0.9,1.2))
+errorbars(fly.lower, fly.upper)
