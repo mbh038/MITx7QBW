@@ -1,0 +1,652 @@
+---
+title: "Untitled"
+author: "Michael Hunt"
+date: "20 May 2016"
+output: html_document
+---
+```{r}
+source("qbwRModule.R")
+```
+
+```{r}
+y = rnorm(1000)
+plot(y, ylab="y-axis label goes here")
+abline(h=mean(y), col="green")
+sdabove = mean(y)+sd(y)
+sdbelow = mean(y)-sd(y)
+abline(h=sdabove, col="orange")
+abline(h=sdbelow, col="orange")
+count(y, sdbelow, sdabove)
+count(y, sdbelow, sdabove)/1000
+```
+
+## WORKING WITH REAL DATA
+
+### Describing Real Data
+
+```{r}
+mean(lowtemp)
+mean(hightemp)
+```
+
+### VISUALIZING THE DATA
+
+```{r}
+plotsidebyside(lowtemp, hightemp, "low", "high", "Thorax length (mm)")
+boxplot(lowtemp, hightemp, names=c("low", "high"), ylab="Thorax length (mm)", xlab="Temperature condition")
+```
+
+## INTRODUCING STANDARD ERROR
+
+We would like to know whether the differences in mean thorax length are statistically significant. To do this, we will need to introduce a new concept which measures how confident we are in our estimate of the mean. Above, we noted that the standard deviation captures the natural variation as well as experimental noise-if the standard deviations are much smaller than the distance between the means, we can have some expectation that the two conditions do in fact differ.
+
+Intuitively, though, there is one thing missing: if you make a large number of measurements, you are going to be much more confident in your result than if you had only made a few measurements.
+
+The standard error of the mean (abbreviated as SEM or SE) is a measure of confidence in your calculation of the mean. The formula for the SEM is:
+
+$$SEM=\frac{sd}{\sqrt{n}}$$
+
+where $sd$ is the standard deviation and $n$ is the number of data points. From this formula, we can see that the SEM will be larger when the standard deviation increases, and smaller when the number of data points increases. Most biology papers with actual data presented will report a mean value as well as the SEM, so it is an important concept to understand.
+
+R does not have a built in SEM function, but one called sem() is included in the course module.  The `sem()` function essentially does the following calculation:
+
+
+`sd(data)/sqrt(n)`
+
+
+The formula for the SEM has some very nice theoretical properties, which we will not go into in too much detail, but here is the idea: remember when we said that 2/3 of the data points are within one standard deviation of the mean, and 95% are within two standard deviations? Well, the SEM has a similar relationship to estimates of the mean. If you were to take many, equally-sized samples and measure each of the means independently, about 95% of the time you would get a measurement of the mean within 2 SEMs of the original measurement.
+
+This explanation is probably pretty confusing. So we are going to go ahead and simulate some data, then we will come back to the fruit fly thorax lengths.
+
+### CALCULATING THE STANDARD ERROR OF SIMULATED DATA
+
+Now let's simulate a dataset with 200 values using the sim() function from the course module:
+
+```{r}
+data.sim = sim(1, 200)
+```
+
+The sim() function is an expanded version of the rnorm command that produces more than one simulated dataset if the first argument is greater than 1.  The command returns a list containing two vectors, each with a name that can be accessed through the names function:
+
+```{r}
+names(data.sim)
+```
+
+Now we can peek at each element of the list using the $ command:
+
+```{r}
+head(data.sim$xvals)
+head(data.sim$yvals)
+```
+
+We can plot the points, but since the x-axis value is the same, they will be pretty stacked:
+
+
+```{r}
+plot(data.sim$xvals, data.sim$yvals) # no good since all x values are the same!
+```
+
+Try to stagger (or "jitter") the x-axis values slightly so that the individual data points are more easily distinguishable from one another:
+    
+```{r}
+plot(jitter(data.sim$xvals), data.sim$yvals, col="grey") # add jitter on x values
+```
+
+This kind of view is best when you're working with a large number of partially overlapping data points. 
+
+Now let's calculate the mean and SEM of the y-values:
+
+```{r}
+m = mean(data.sim$yvals)
+s = sem(data.sim$yvals)
+```
+
+Let's add an "x" to the plot for the mean (pch stands for "point character", ie the symbol used to represent the point):
+
+```{r chunk that fails}
+points(1, m, pch="x")
+```
+
+You can replace "x" with pretty much any symbol or number (examples shown in example(pch)).
+Now, we're going to plot error bars above and below the mean:below = m-2*s
+
+```{r}
+above = m+2*s
+errorbars(above, below)
+```
+
+Now, more than likely, the mean is very close to 0, and the error bars will extend slightly above and below zero.
+
+These error bars represent what are called 95% confidence intervals: we are 95% confident that the true mean falls somewhere along the error bars.
+
+### USING SIMULATIONS TO ESTIMATE CONFIDENCE
+
+In real biology, you do your best to get a large sample size but you generally have to make do with whatever you can get. 
+You are going to take advantage of the fact that we are simulating data to see what would happen if you repeated the
+experiment over and over again.
+
+You will follow the same steps of simulating data, plotting it, calculating the confidence intervals, and then adding those on top of the plotted data. This time, though, you are going to do it with multiple data sets simultaneously. 
+
+Create a new script document that you can use to type in commands.
+
+Use the sim() function to simulate 100 datasets each of size 25. 
+Type these lines into the new script document:
+
+```{r}
+nsamples = 100
+samplesize = 25
+datasets = sim(nsamples, samplesize)
+```
+
+Again use source command to run the commands you just typed in. As before, datasets is a variable with some x-values and some y-values. 
+
+Let's look at the individual datasets. You can try running the following command at the command prompt to inspect the y-values:
+
+```{r}
+datasets$yvals
+```
+
+You will notice that the data are organized into 100 columns (each representing a dataset) of 25 values each (the data points). The x-values are basically just groupings for the 100 different datasets, as you will see when you plot the simulated data:
+
+```{r}
+plot(datasets$xvals, datasets$yvals, col="grey")
+```
+
+(You can make the window wider or try the jitter command again-if the points are too jittered, you can also try using jitter(datasets$xvals, 0.5) to reduce the amount of jitter).
+
+You are going to calculate the means and SEMs for each of the columns. Add these two lines to your script file and hit run:
+    
+```{r}
+col.means = colMeans(datasets$yvals)
+col.sems = sem(datasets$yvals)
+```
+
+Inspect the col.means and col.sems variables. You will note that col.means and col.sems each have 100 values, since the colMeans() and sem() commands work on each column of their input separately.  The "matrix" variable type (basically just a table of values) is built into the R language, and is one of the reasons that R lends itself so readily to analyzing data.
+
+As before, use the points() command to superimpose the mean values for the data points 1:100 on top of the raw data points  (remember that 1:nsamples will fill in as 1:100, which produces each integer between 1 and 100):
+
+```{r}
+points(1:nsamples, col.means, pch="x")
+```
+
+Run the script to see the points plotted. Now, we'll use the means and SEMs to calculate error bars. As we did before, we are going to take the mean values and add the SEMs to them, and here we are taking advantage of the capabilities of the matrix variable type: subtraction of equally-sized matrices performs element-wise subtraction. Add the following:
+
+```{r}
+col.lowers = col.means-2*col.sems
+```
+
+which multiplies 2 times each value in col.sems; and then subtracts the first value in 2*col.sems from the first value in col.means, the second value in 2*col.sems from the second value in col.means, and so on.
+
+```{r}
+col.uppers = col.means+2*col.sems
+```
+
+Next, as we did before, we're going to plot the error bars, but we are going to color those that do not include zero differently:
+
+```{r}
+colors = errorbarcolors(col.uppers, col.lowers)
+errorbars(col.uppers, col.lowers, col=colors)
+```
+
+And finally, we will add in a line representing the "true" mean of zero:
+
+```{r}
+abline(h=0, col="red")
+```
+
+About 95% of the confidence intervals should include zero-that is, on average, 95 out of the 100 datasets you sampled. If you are having trouble eyeballing from the graph how many of the confidence intervals do in fact include zero, you can use the following command to count them for you:
+
+```{r}
+print(count(0, col.lowers, col.uppers)/nsamples)
+```
+
+which counts how many col.lowers, col.uppers pairs include zero. If you have copied the above into a new script file, you can re-run it several times to see that this number should be quite close to 95/100.
+
+### STANDARD ERROR IN REAL DATA
+
+Let's return to our Drosophila experiment. As a reminder, we had raised fruit flies at two different temperatures (the low temperature, and the higher, normal temperature) and measured thorax lengths of a number of flies. 
+
+You are going to plot the means and approximate confidence intervals so we can make an informed comparison between the two means.
+
+Calculate the two means and SEMs by creating vectors of these values at the command prompt:
+
+```{r}
+fly.means = c(mean(lowtemp), mean(hightemp))
+fly.sems = c(sem(lowtemp), sem(hightemp))
+```
+
+Calculate the confidence interval lower and upper bounds (remember this subtraction will work element-wise, so fly.lower and fly.upper will both be vectors of length 2):
+
+```{r}
+fly.lower = fly.means-2*fly.sems
+fly.upper = fly.means+2*fly.sems
+```
+
+Now plot the values:
+
+```{r}
+plot(c(1,2), fly.means)
+```
+
+Now add in the error bars:
+
+```{r}
+errorbars(fly.lower, fly.upper)
+```
+
+If you like, you can change the y-axis on the plot() command by adding in the parameter ylim=c(0.9,1.2):
+
+```{r}
+plot(c(1,2), fly.means, ylim=c(0.9,1.2))
+errorbars(fly.lower, fly.upper)
+```
+
+## HYPOTHESIS TESTING
+
+In contrast to descriptive statistics, which attempt to summarize and distill sample data, inferential statistics seek to make a conclusion about the population those data were sampled from. Looking at confidence intervals is a good first step in inferring the "true" mean but to formally compare two samples, you will want to define a hypothesis to test.
+
+In our fruit fly thorax length study, we might define the following hypothesis:
+
+. null hypothesis (the assumed, but unexciting result): mean thorax length is the same whether fruit flies are raised at a low temperature or a normal temperature
+
+. alternative hypothesis (the opposite, interesting result): mean thorax length differs between fruit flies raised at a low temperature and those raised at the normal temperature
+
+Notice that the hypothesis specifically includes the measure that we are comparing: the mean. Now to test this, we will use the t-test, which makes the following assumption:
+
+The sample points have an approximately bell-shaped histogram.
+
+That is, the sample points are not bi-modal (where there is more than one maximum value) or logarithmic (the values do not span multiple orders of magnitude, for example 1,10,100,1000). For most real data, this is an assumption that can be verified relatively easily just by looking at the histogram.
+
+Plot the histograms for the lowtemp and hightemp samples (separately!) using the hist() command to verify this.
+
+```{r}
+hist(lowtemp)
+hist(hightemp)
+```
+
+The t-test will take a normally distributed (ie bell-shaped) sample and compare the mean to a given value. For example, if a well-established average number of eggs in the roundworm C. elegans is 300, you might wish to compare the average number of progeny produced by sampling a C. elegans mutant you think might affect the egg- laying capacity to see if the average number of eggs is significantly different from 300. This is called a one sample t- test.
+
+In our fruit fly experiment, we have two samples we wish to compare, and in this case, we can slightly rephrase our hypotheses to perform a two sample t-test:
+
+. null hypothesis: the difference in mean thorax length is zero when comparing fruit flies raised at a low temperature to those raised at a normal temperature
+
+. alternative hypothesis: the difference in mean thorax length is significantly greater or significantly less than zero when comparing fruit flies raised at a low temperature and those raised at the normal temperature
+
+The built-in t.test() function in R can take two samples:
+
+```{r}
+t.test(lowtemp, hightemp)
+```
+
+or one sample:
+
+```{r}
+t.test(lowtemp, mu=1)
+t.test(hightemp, mu=1)
+```
+
+(where mu is the value to compare against). You will note that the result will specify whether you are performing a one sample or two sample t-test, and will in fact show you the alternative hypothesis being tested.
+
+The result shows values for t, df and p. The t-test will take your sample, calculate the mean, standard deviation and standard error, and from these, produce a value for t, which is basically the difference between the sample means divided by (normalized by) the SEM. The calculation of the exact p-value depends on the sample size, and the degrees of freedom (df) is calculated from n (the larger the number of data points, the larger the number of degrees of freedom and the more exact your result). And finally, the p-value tells you the certainty with which you can "reject" the null hypothesis in favor of the alternative hypothesis.
+
+Before we explore the meaning of the p-value, just note that the one sample t-test will give confidence intervals (these confidence intervals do not depend on the value of mu). They should be very close to the confidence intervals we calculated in fly.lower and fly.upper, although using the t.test() function will give a narrower, more exact result. 
+
+### Using p-Values in Practice
+
+Often times a p-value is used by biologists to determine if an event is scientifically interesting. If an experiment produces data that rejects the null hypothesis with a p-value less than 0.05, then we stay that this result is "Statistically Significant".
+
+Given the results of the t-test above, and a threshold of 0.05, are the two sets of temperature measurements significantly different (can we reject the null hypothesis)?
+
+Yes! Since p < 0.05
+
+### P-VALUE
+
+We are going to return to simulating data to gain an intuitive understanding of how the p-value is calculated. Here is a definition of p-value: the probability, if the null hypothesis were true, that a more extreme value of the measure would be gotten purely by chance.
+
+First, simulate some data as if the null hypothesis were true. Let's go back to the C. elegans egg-laying mutant. Let's sample a whole bunch of data points with an average value of about 300 and a standard deviation of 25 (put these commands in a new script file):
+
+```{r}
+nsim = 1000
+samplesize = 50
+wildtype.mean = 300
+wildtype.sd = 25
+wildtype = sim(nsim, samplesize, wildtype.mean, wildtype.sd)
+```
+
+And calculate the empirical means of the 1000 simulated datasets:
+
+```{r}
+wildtype.col.means = colMeans(wildtype$yvals)
+```
+
+Now let's pretend that the mutant has a true mean of 290:
+
+```{r}
+mutant = rnorm(samplesize, mean=290, sd=wildtype.sd)
+```
+
+Let's print out whether the mean number of eggs laid by the mutants is in fact lower than the normal, wild-type mean:
+
+```{r}
+print(mean(mutant) < 300)
+```
+
+(This will print TRUE or FALSE).
+
+Now let's get the p-value for the t-test:
+
+```{r}
+print(t.test(mutant, mu=300, alternative="less")$p.value)
+```
+
+(the alternative option just means we're assuming that the mutant must have a lower egg-laying ability, if in fact it's different from the normal, wild-type egg-laying rate).
+
+Finally, let's calculate the p-value directly ourself. To do this, let's see what proportion of the wild-type means are smaller than the mutant mean (that is, between 0 and the mutant mean) just by chance:
+
+```{r}
+print(count(wildtype.col.means, 0, mean(mutant))/nsim)
+```
+
+Now run the entire script several times. You should see results similar to the following:
+
+[1] TRUE
+
+[1] 0.002521048
+
+[1] 0.003
+
+Where the TRUE indicates that the mutant mean was in fact lower than 300, the 0.0025 is the p-value calculated using the t.test() function, and the 0.003 value is the p-value calculated by comparing the normal means to the mutant mean. You'll see that some of the p-values are quite close, and others aren't quite so close, but they should generally be within a factor of 2x (except for the really really small ones). If you want a better estimate, you can change the nsim to 10,000 or 100,000, although you will have to wait a little while for it to finish running. 
+
+### Comparing Tests
+
+(3 points possible)
+In many cases, a single tail test can be more precise than a two-tailed test.
+
+First, compare the wildtype.col.means values to the mutant values using a two-sample t.test.
+
+```{r}
+t.test(wildtype.col.means,mutant)$p.value
+```
+
+By default this is a two-sided t-test, which means that the value is surprisingly different no matter what.
+
+What happens when you enter 'less' as the alternative hypothesis?
+
+```{r}
+t.test(wildtype.col.means,mutant,alternative="less")$p.value
+```
+
+ The p-value increases.
+
+
+What happens when you enter 'greater' as the alternative hypothesis?
+
+```{r}
+t.test(wildtype.col.means,mutant,alternative="greater")$p.value
+```
+
+The p-value decreases.
+
+
+Now let's look at the Wilcoxon rank sum test to compare values:
+
+```{r}
+wilcox.test(wildtype.col.means,mutant)$p.value
+```
+
+Interestingly, this p-value will not always be the same as the t-test. However, the direction should change accordingly as you move to a single sided test from the two-sided test:
+
+```{r}
+wilcox.test(wildtype.col.means,mutant,alternative="greater")$p.value
+```
+What happens when you enter 'greater' as the alternative hypothesis?
+
+The p-value decreases.
+ 
+Depending on your data, you need to carefully select the test used and how you administer it!
+
+## PREDICTING DISEASE PROGNOSIS FROM DATA
+
+Many of the straightforward statistics applied earlier can be used to better understand molecular patterns in human disease such as cancer.  
+
+Using high throughput sequencing or microarray technologies, we can identify RNA levels of every gene across a large number of cancer patients.  While Python excels at mapping sequence-level changes to genes as we did earlier, R is useful for analysing and visualizing these changes across a patient cohort.
+
+### THE DATA
+
+For the purposes of this exercise we are going to use data from 92 breast cancer tumors, each measuring genome wide mRNA expression levels. Because there are 13,654 genes on the array in question, we can analyze this data using a matrix with 13,654 rows and 92 columns:
+
+```{r}
+mrna.data = getMrnaData()
+```
+
+We can use the command dim() and head() to make sure our counts are correct:
+
+```{r}
+dim(mrna.data)
+```
+
+[1] 13654 92
+
+```{r}
+head(mrna.data)
+```
+
+We also have information associated with each patient.
+
+```{r}
+patient.data = getPatientData()
+```
+
+(Note that if this command produces an error, you should check out this post in the forum for how to proceed.)
+
+it does! On a W7 machine:
+
+If you are having issues with the line patient.data = getPatientData(), go to this link:
+
+https://courses.edx.org/c4x/MITx/7.QBW_1x/asset/7qbwx_patientData.csv 
+
+```{r}
+url <- "https://courses.edx.org/c4x/MITx/7.QBW_1x/asset/7qbwx_patientData.csv"
+filename <- "7qbwx_patientData.csv"
+library(downloader)
+if (!file.exists(filename)) download(url, filename)
+tab = read.csv(file="7qbwx_patientData.csv",sep=',',as.is=T,header=T,fill=T,row.names=1)[-missingpats,]
+tab[,3] = as.numeric(tab[,3])
+patient.data = tab
+```
+
+And you should be good to go.
+
+```{r}
+dim(patient.data)
+```
+
+[1] 92 3
+
+```{r}
+head(patient.data)
+```
+
+
+Each of the 92 rows represents an individual tumor from a single patient. The first column represents the 'subtype' of the breast cancer. Breast cancer is usually viewed as a collection of distinct diseases each with its own molecular pattern. These subtypes have different treatment regimens and survival rates. The second column represents whether or not the patient is alive, dead from their cancer or dead for another reason. The third column represents how many months post-diagnosis the patient has been observed. Higher values are good, as it means that the patient has lived a long time.
+
+
+### ASSESSING VARIATION ACROSS PATIENTS
+
+Now to get to the statistics. In any disease tissue, some genes are up-regulated relative to a normal tissue and some are down-regulated. The array values represent how much mRNA was measured for a particular gene for a particular patient.
+
+We can assume that most genes exhibit some natural variation between patients as not all patients react to a disease in the same way. We can measure that variation using the summary statistic standard deviation, described above. In R, standard deviation is measured with the function sd():
+
+```{r}
+sd(mrna.data[1,])
+```
+
+We can also assume that the genes that play a more prominent role in breast cancer are varying more than others, so we can calculate the standard deviation for each gene using a command that executes the same command for each row of the matrix:
+
+```{r}
+all.sds = getAllRowStd(mrna.data)
+head(all.sds)
+```
+
+Since we are interested in which genes vary the most, we sort the genes by standard deviation:
+
+```{r}
+sorted.sds = sort(all.sds,decreasing=T)
+head(sorted.sds)
+```
+
+### Variation in Patient Data
+
+There is a large amount of natural variation in gene expression that might not be meaningful.
+
+Using the sorted.sds vector, enter the value of the gene with the largest standard deviation:
+
+```{r}
+sorted.sds[1]
+```
+
+
+Enter the name of the gene:
+
+```{r}
+names(sorted.sds[1])
+```
+
+What is the name of the gene that is 2000th in the sorted list?
+
+```{r}
+names(sorted.sds[2000])
+```
+
+### DATA VISUALIZATION
+
+R has many sorting functions, including one that simply returns the indexes of the array in a sorted order. This way we can use the order of standard deviation values to sort the matrix.
+
+```{r}
+sorted.order = order(all.sds,decreasing=T)
+sorted.matrix=mrna.data[sorted.order,]
+```
+
+This matrix keeps the most changing genes at the top.
+
+Now that we have a sense of what genes are changing the most across breast cancer, we want to determine if those changes are relevant to the disease. The most common way to do that is to use heatmaps. Heatmaps are visual representations of a matrix such that each value in the matrix has a specific color associated with it. In R we are using the 'pretty heatmap' function called `pheatmap()`.
+
+```{r}
+m = matrix(c(1,2,3,4,5,6),nrow=2)
+m
+pheatmap(m)
+```
+
+In this heatmap there are 6 colors, each representing a different value in the matrix. Typically the coloring represents a gradient from high to low, so as the number of elements in the matrix increase the colors become more subtle:
+
+```{r}
+m = matrix(seq(1,25),nrow=5)
+m
+pheatmap(m)
+```
+
+In addition the visualization, heatmaps can also be used to illustrate clustering. By default, the `pheatmap` program places the rows and columns that are closest adjacent to each other. For example, the values 1-5 (most blue) are adjacent to the values 6-10 (lighter shade of blue).
+
+Biologically, this becomes more interesting when we cluster genes across patients. Genes that cluster together have been found to be part of similar biological processes such as cell division and cell death. Patients that cluster together often have similar disease characteristics.
+
+```{r}
+pheatmap(sorted.matrix[1:10,],scale='row')
+```
+
+The 'scale' option normalizes the values of the matrix such that each row (gene) has a mean around 0. Thus, any gene that is 'up' is more red, and those genes that are more down-regulated are more blue.
+
+To get a better sense of how these 10 genes vary across patients we include the patient variables that we scanned in earlier. First we get the variable of interest, such as tumor subtype.
+
+```{r}
+ts=subset(patient.data,select='Tumor.subtype')
+pheatmap(sorted.matrix[1:10,],annotation=ts,scale='row')
+```
+
+Now when we cluster the same genes we see the basal patients clustering together. This means that these 10 genes behave different in the basal subtype than the other types of breast cancer. By modifying how many genes we use we can get more separation between cancer subtypes. To further explore this, try plotting the heatmap with more than 20, then 50, then 100 of the most variable genes.
+
+```{r}
+pheatmap(sorted.matrix[1:20,],annotation=ts,scale='row')
+pheatmap(sorted.matrix[1:50,],annotation=ts,scale='row')
+pheatmap(sorted.matrix[1:100,],annotation=ts,scale='row')
+```
+
+### USING GENE EXPRESSION TO EVALUATE PATIENT PROGNOSIS 
+
+It is interesting that a set of genes, sorted by standard deviation, can distinguish different types of disease in breast cancer patients.
+
+Even more interesting would be to identify a specific set of genes that were specifically involved in a causing a particular cancer subtype.  Or genes that are correlated with patient survival!
+
+To do this, we need more statistics. Pearson correlation summarizes the similarity between two vectors. A correlation value of 1 implies that the two vectors are high in the same patients and low in the same patients. A value of -1 implies that when one sample is up, the other is down. In R the correlation is computed via the function cor()
+
+A brief example:
+
+```{r}
+x=rnorm(100)
+y1 = x
+y2 = x + rnorm(100)
+y3 = rnorm(100)
+par(mfcol=c(3,1))
+plot(x, y1, main=cor(x,y1))
+plot(x, y2, main=cor(x,y2))
+plot(x, y3, main=cor(x,y3))
+```
+
+We can use the correlation statistic to identify genes in the array that best correlate with a patient's likelihood of survival. First, we create a numeric vector representing the patients in the study. A '1' means the patient has survived with the cancer and a '0' indicates they have not:
+
+```{r}
+life.vector=rep(0,ncol(mrna.data))
+life.vector[which(patient.data[,2]=='Alive')] = 1
+head(life.vector)
+```
+
+
+
+```{r}
+cor(sorted.matrix[1,],life.vector)
+```
+
+
+
+Because we are interested in genes that are both correlated and anti-correlated we compute the square of the correlation for each gene using the apply() function.
+
+```{r}
+all.cors = matrixToVectorSqCor(sorted.matrix,life.vector)
+head(all.cors)
+```
+
+
+Because we are searching for genes that are highly correlated, we can use the order() function to get genes that are most correlated.
+
+```{r}
+cor.matrix = sorted.matrix[order(all.cors,decreasing=T),]
+```
+
+Then we can use the heatmap to plot these genes to see if the clustering keeps all the patients who survive together. This time we want to plot patient survival.
+
+```{r}
+surv = subset(patient.data,select='Death.status')
+surv
+pheatmap(cor.matrix[1:50,],annotation=surv,fontsize=8,cellheight=9,scale='row') 
+```
+
+You might need to resize the windows within RStudio to get the entire heatmap to appear.
+
+Now the cluster of patients that are alive cluster together (with a few exceptions). This implies that the genes selected may play a role in helping the patient respond to treatment, or simply suggest a milder form of cancer. 
+
+### Finding Genes of Interest
+
+Using the 'Zoom' button in RStudio, zoom into the gene names to determine what role these genes can be playing in patient survival. We can now evaluate the clusters of genes (represented by the tree on the left).
+
+Which of these genes are mostly up-regulated (yellow or orange) in patients who are alive? (Keep in mind that your heat map only includes the 50 genes most correlated with alive or dead patients)
+
+ PHC1  SERTAD3  WDR57  PBX1  COG4
+ 
+
+Which of these genes are mostly down-regulated (blue) in patients who are alive? (Keep in mind that your heat map only includes the 50 genes most correlated with alive or dead patients)
+
+ TNK2  NPAS4  SPPL2B  PHC1
+ 
+ 
+ 
+ 
+ 

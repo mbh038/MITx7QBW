@@ -184,14 +184,42 @@ print(count(0, col.lowers, col.uppers)/nsamples)
 
 ## STANDARD ERROR IN REAL DATA
 
+# Let's return to our Drosophila experiment. As a reminder, we had raised fruit
+# flies at two different temperatures (the low temperature, and the higher, 
+# normal temperature) and measured thorax lengths of a number of flies. 
+# You are going to plot the means and approximate confidence intervals so we can
+# make an informed comparison between the two means.
+
+# Calculate the two means and SEMs by creating vectors of these values at the command prompt:
+
 fly.means = c(mean(lowtemp), mean(hightemp))
 fly.sems = c(sem(lowtemp), sem(hightemp))
+
+# Calculate the confidence interval lower and upper bounds (remember this subtraction will 
+# work element-wise, so fly.lower and fly.upper will both be vectors of length 2):
 
 fly.lower = fly.means-2*fly.sems
 fly.upper = fly.means+2*fly.sems
 
+# Now plot the values:
+
 plot(c(1,2), fly.means)
+
+# Now add in the error bars:
+
 errorbars(fly.lower, fly.upper)
+
+# If you like, you can change the y-axis on the plot() command by adding in the parameter
+# ylim=c(0.9,1.2):
 
 plot(c(1,2), fly.means, ylim=c(0.9,1.2))
 errorbars(fly.lower, fly.upper)
+
+## HYPOTHESIS TESTING
+
+hist(lowtemp)
+hist(hightemp)
+
+t.test(lowtemp,hightemp) # 2 sample t test
+t.test(lowtemp, mu=1) # 1 sample t test
+t.test(hightemp, mu=1)
